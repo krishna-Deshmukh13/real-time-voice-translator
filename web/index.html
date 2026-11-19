@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoxTranslate — Real-Time Voice, Document & Web Translator • Developed by Krishna</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Tesseract.js for client-side Image OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-card: #f1f5f9;
+      --bg-card-hover: #e2e8f0;
+      --border-color: #e2e8f0;
+      --border-focus: #4f46e5;
+      
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      
+      --accent: #4f46e5;
+      --accent-hover: #4338ca;
+      --accent-light: #e0e7ff;
+      --accent-glow: rgba(79, 70, 229, 0.18);
+      
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-full: 9999px;
+      
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+      --shadow-glow: 0 0 16px rgba(79, 70, 229, 0.15);
+      
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Navigation Header */
+    header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.85rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.3rem;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand-author-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: var(--accent-light);
+      color: var(--accent);
+      border: 1px solid rgba(79, 70, 229, 0.25);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .icon-button {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+
+    .icon-button:hover {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border-color: var(--text-muted);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 3rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* --------------------------------------------------------- */
+    /* 4-Mode Selector Bar (Exact Google Translator Mode Pills)   */
+    /* --------------------------------------------------------- */
+    .mode-selector-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      overflow-x: auto;
+      padding: 0.25rem 0;
+    }
+
+    .mode-pill {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.6rem 1.35rem;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+    }
+
+    .mode-pill:hover {
+      color: var(--text-primary);
+      background: var(--bg-card);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .mode-pill.active {
+      background: var(--accent-light);
+      color: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 14px rgba(79, 70, 229, 0.16);
+    }
+
+    .mode-icon {
+      font-size: 1.1rem;
+    }
+
+    /* Language Switcher Bar */
+    .language-bar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 1rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 0.65rem 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .lang-chips-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .lang-chips-group::-webkit-scrollbar {
+      display: none;
+    }
+
+    .lang-chip {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.4rem 0.85rem;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .lang-chip:hover {
+      color: var(--text-primary);
+      background: var(--bg-card);
+    }
+
+    .lang-chip.selected {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .lang-select-dropdown {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 500;
+      padding: 0.4rem 0.75rem;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .swap-button {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s;
+    }
+
+    .swap-button:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+      transform: rotate(180deg);
+    }
+
+    /* --------------------------------------------------------- */
+    /* View Sections (Text, Images, Documents, Websites)         */
+    /* --------------------------------------------------------- */
+    .view-section {
+      display: none;
+    }
+
+    .view-section.active {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Translation Studio Layout (Mode 1: Text) */
+    .translation-studio {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      min-height: 380px;
+    }
+
+    @media (max-width: 840px) {
+      .translation-studio {
+        grid-template-columns: 1fr;
+      }
+      .language-bar {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+      .swap-button {
+        margin: 0 auto;
+      }
+    }
+
+    /* Cards */
+    .studio-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .studio-card:focus-within {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .card-topbar {
+      padding: 0.85rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+      background: #fafafa;
+    }
+
+    .card-lang-badge {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .card-actions-top {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .action-icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      transition: color 0.15s, background-color 0.15s;
+    }
+
+    .action-icon-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-card);
+    }
+
+    .editor-wrapper {
+      flex: 1;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+    }
+
+    .translation-textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 220px;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: var(--font-sans);
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: var(--text-primary);
+    }
+
+    .translation-textarea::placeholder {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    .translated-output-area {
+      flex: 1;
+      font-size: 1.15rem;
+      line-height: 1.6;
+      color: var(--text-primary);
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 220px;
+    }
+
+    .translated-output-area.placeholder {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    .card-bottombar {
+      padding: 0.85rem 1.25rem;
+      background: #fafafa;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .action-group-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .voice-mic-pill {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-full);
+      font-family: var(--font-sans);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      box-shadow: 0 2px 8px var(--accent-glow);
+      transition: transform 0.15s, background-color 0.2s;
+    }
+
+    .voice-mic-pill:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .voice-mic-pill.recording {
+      background: var(--danger);
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+      animation: pulse-ring 1.5s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+      70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .listen-pill-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.45rem 0.85rem;
+      border-radius: var(--radius-full);
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .listen-pill-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-card);
+      border-color: var(--text-muted);
+    }
+
+    .char-counter {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* --------------------------------------------------------- */
+    /* Mode 2: Images Translation Styles                         */
+    /* --------------------------------------------------------- */
+    .upload-dropzone {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-lg);
+      background: var(--bg-surface);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .upload-dropzone:hover, .upload-dropzone.dragover {
+      border-color: var(--accent);
+      background: #f8fafc;
+    }
+
+    .dropzone-icon {
+      font-size: 3rem;
+      margin-bottom: 0.75rem;
+      color: var(--accent);
+    }
+
+    .dropzone-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: var(--text-primary);
+    }
+
+    .dropzone-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    .image-preview-studio {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .image-card-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-md);
+      max-height: 520px;
+    }
+
+    .preview-img {
+      max-width: 100%;
+      max-height: 340px;
+      object-fit: contain;
+      border-radius: var(--radius-md);
+      background: #f1f5f9;
+      border: 1px solid var(--border-color);
+    }
+
+    /* --------------------------------------------------------- */
+    /* Mode 3: Documents Translation Styles                      */
+    /* --------------------------------------------------------- */
+    .document-preview-studio {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      min-height: 380px;
+    }
+
+    .doc-meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 0.35rem 0.85rem;
+      border-radius: var(--radius-full);
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+    }
+
+    /* --------------------------------------------------------- */
+    /* Mode 4: Websites Translation Styles                       */
+    /* --------------------------------------------------------- */
+    .website-input-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      display: flex;
+      gap: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.25rem;
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .url-input:focus {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .translate-url-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1.5rem;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+
+    .translate-url-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .website-results-container {
+      display: none;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      flex-direction: column;
+      gap: 1.25rem;
+      box-shadow: var(--shadow-md);
+    }
+
+    .web-article-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .web-article-orig {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .web-article-trans {
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      line-height: 1.6;
+      font-weight: 500;
+    }
+
+    /* History & Saved Drawer */
+    .history-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }
+
+    .history-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .history-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.75rem;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    .history-item:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent);
+    }
+
+    .history-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+
+    .history-item-src {
+      font-size: 0.88rem;
+      color: var(--text-primary);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-item-tgt {
+      font-size: 0.85rem;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 0.15rem;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--text-primary);
+      color: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 0.75rem 1.25rem;
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-surface);
+    }
+
+    footer strong {
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-logo">✦</div>
+      <div>
+        <div class="brand-title">
+          VoxTranslate
+          <span class="brand-author-badge">By Krishna</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="icon-button" id="clear-all-btn" title="Clear All Text">🗑️</button>
+    </div>
+  </header>
+
+  <!-- Main Content Studio -->
+  <main>
+    <!-- 4-Mode Selector Bar (Exact Google Translate Style Pills) -->
+    <div class="mode-selector-bar">
+      <button class="mode-pill active" data-mode="text">
+        <span class="mode-icon">文A</span> Text
+      </button>
+      <button class="mode-pill" data-mode="images">
+        <span class="mode-icon">🖼️</span> Images
+      </button>
+      <button class="mode-pill" data-mode="documents">
+        <span class="mode-icon">📄</span> Documents
+      </button>
+      <button class="mode-pill" data-mode="websites">
+        <span class="mode-icon">🌐</span> Websites
+      </button>
+    </div>
+
+    <!-- Language Selection Bar (Common for all modes) -->
+    <div class="language-bar">
+      <!-- Source Languages -->
+      <div class="lang-chips-group" id="src-chips">
+        <button class="lang-chip selected" data-lang="Auto">🌐 Auto</button>
+        <button class="lang-chip" data-lang="English">🇺🇸 English</button>
+        <button class="lang-chip" data-lang="Spanish">🇪🇸 Spanish</button>
+        <button class="lang-chip" data-lang="Hindi">🇮🇳 Hindi</button>
+        <button class="lang-chip" data-lang="French">🇫🇷 French</button>
+        <select class="lang-select-dropdown" id="src-select">
+          <option value="">More ▾</option>
+        </select>
+      </div>
+
+      <!-- Swap Button -->
+      <button class="swap-button" id="swap-btn" title="Swap Languages">⇄</button>
+
+      <!-- Target Languages -->
+      <div class="lang-chips-group" id="tgt-chips">
+        <button class="lang-chip selected" data-lang="Spanish">🇪🇸 Spanish</button>
+        <button class="lang-chip" data-lang="English">🇺🇸 English</button>
+        <button class="lang-chip" data-lang="Hindi">🇮🇳 Hindi</button>
+        <button class="lang-chip" data-lang="French">🇫🇷 French</button>
+        <button class="lang-chip" data-lang="German">🇩🇪 German</button>
+        <select class="lang-select-dropdown" id="tgt-select">
+          <option value="">More ▾</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODE 1: TEXT TRANSLATION                                 -->
+    <!-- ======================================================= -->
+    <div class="view-section active" id="view-text">
+      <div class="translation-studio">
+        <!-- Input Card (Left) -->
+        <div class="studio-card" id="source-card">
+          <div class="card-topbar">
+            <div class="card-lang-badge" id="source-badge">
+              <span>🌐</span> Auto Detect
+            </div>
+            <div class="card-actions-top">
+              <button class="action-icon-btn" id="src-copy-btn" title="Copy Input Text">📋</button>
+              <button class="action-icon-btn" id="src-clear-btn" title="Clear Input Text">✕</button>
+            </div>
+          </div>
+
+          <div class="editor-wrapper">
+            <textarea
+              class="translation-textarea"
+              id="source-textarea"
+              placeholder="Type, paste text, or click 'Voice Input' to speak..."
+              maxlength="5000"
+            ></textarea>
+          </div>
+
+          <div class="card-bottombar">
+            <div class="action-group-left">
+              <button class="voice-mic-pill" id="voice-btn">
+                <span id="voice-icon">🎙️</span>
+                <span id="voice-label">Voice Input</span>
+              </button>
+              <button class="listen-pill-btn" id="src-listen-btn">
+                🔊 Listen
+              </button>
+            </div>
+            <div class="char-counter" id="char-counter">0 / 5,000</div>
+          </div>
+        </div>
+
+        <!-- Translated Card (Right) -->
+        <div class="studio-card" id="target-card">
+          <div class="card-topbar">
+            <div class="card-lang-badge" id="target-badge">
+              <span>🇪🇸</span> Spanish
+            </div>
+            <div class="card-actions-top">
+              <button class="action-icon-btn" id="tgt-star-btn" title="Save Translation">⭐</button>
+              <button class="action-icon-btn" id="tgt-copy-btn" title="Copy Translation">📋</button>
+            </div>
+          </div>
+
+          <div class="editor-wrapper">
+            <div class="translated-output-area placeholder" id="target-output">
+              Translation will appear here in real time...
+            </div>
+          </div>
+
+          <div class="card-bottombar">
+            <div class="action-group-left">
+              <button class="listen-pill-btn" id="tgt-listen-btn">
+                🔊 Pronounce Translation
+              </button>
+              <button class="listen-pill-btn" id="tgt-save-history-btn">
+                💾 Save to Log
+              </button>
+            </div>
+            <div class="char-counter" id="status-badge">⚡ Real-time</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODE 2: IMAGES TRANSLATION                              -->
+    <!-- ======================================================= -->
+    <div class="view-section" id="view-images">
+      <div class="upload-dropzone" id="image-dropzone">
+        <input type="file" id="image-file-input" accept="image/*" style="display:none;">
+        <div class="dropzone-icon">🖼️</div>
+        <div class="dropzone-title">Drag and drop an image, or click to browse</div>
+        <div class="dropzone-subtitle">Supports PNG, JPG, JPEG, WEBP • You can also press Ctrl+V to paste from clipboard</div>
+      </div>
+
+      <div class="image-preview-studio" id="image-preview-studio">
+        <div class="image-card-box">
+          <div style="font-weight:600; font-size:0.9rem; color:var(--text-secondary);">Original Image Preview</div>
+          <img id="image-preview-element" class="preview-img" src="" alt="Preview">
+          <div id="ocr-status-badge" style="font-size:0.82rem; color:var(--accent);">Scanning text...</div>
+        </div>
+
+        <div class="studio-card">
+          <div class="card-topbar">
+            <div class="card-lang-badge">Extracted & Translated Text</div>
+            <div class="card-actions-top">
+              <button class="action-icon-btn" id="img-copy-btn" title="Copy Translation">📋</button>
+            </div>
+          </div>
+          <div class="editor-wrapper">
+            <div class="translated-output-area" id="image-translated-output">
+              Scanning image and translating...
+            </div>
+          </div>
+          <div class="card-bottombar">
+            <div class="action-group-left">
+              <button class="listen-pill-btn" id="img-listen-btn">🔊 Pronounce</button>
+              <button class="listen-pill-btn" id="img-reupload-btn">🔄 Upload New Image</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODE 3: DOCUMENTS TRANSLATION                           -->
+    <!-- ======================================================= -->
+    <div class="view-section" id="view-documents">
+      <div class="upload-dropzone" id="doc-dropzone">
+        <input type="file" id="doc-file-input" accept=".pdf,.docx,.txt,.md,.json,.csv" style="display:none;">
+        <div class="dropzone-icon">📄</div>
+        <div class="dropzone-title">Upload a document to translate</div>
+        <div class="dropzone-subtitle">Supports .pdf, .docx, .txt, .md, .csv • Extracts text & translates seamlessly</div>
+      </div>
+
+      <div class="document-preview-studio" id="doc-preview-studio">
+        <!-- Original Document Extracted Text -->
+        <div class="studio-card">
+          <div class="card-topbar">
+            <div class="card-lang-badge">Original Document (<span id="doc-filename-badge">file.pdf</span>)</div>
+            <span class="doc-meta-badge" id="doc-words-badge">0 words</span>
+          </div>
+          <div class="editor-wrapper">
+            <textarea class="translation-textarea" id="doc-orig-textarea" readonly></textarea>
+          </div>
+        </div>
+
+        <!-- Translated Document Text -->
+        <div class="studio-card">
+          <div class="card-topbar">
+            <div class="card-lang-badge">Translated Document</div>
+            <div class="card-actions-top">
+              <button class="action-icon-btn" id="doc-copy-btn" title="Copy Translation">📋</button>
+            </div>
+          </div>
+          <div class="editor-wrapper">
+            <div class="translated-output-area" id="doc-translated-output"></div>
+          </div>
+          <div class="card-bottombar">
+            <div class="action-group-left">
+              <button class="listen-pill-btn" id="doc-listen-btn">🔊 Pronounce</button>
+              <button class="listen-pill-btn" id="doc-download-btn">📥 Download (.txt)</button>
+              <button class="listen-pill-btn" id="doc-reupload-btn">🔄 New Document</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- MODE 4: WEBSITES TRANSLATION                            -->
+    <!-- ======================================================= -->
+    <div class="view-section" id="view-websites">
+      <div class="website-input-card">
+        <input type="url" class="url-input" id="website-url-input" placeholder="Enter full website URL (e.g. https://news.ycombinator.com or blog article)">
+        <button class="translate-url-btn" id="translate-web-btn">
+          <span>🌐</span> Translate Website
+        </button>
+      </div>
+
+      <div class="website-results-container" id="web-results-container">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem;">
+          <div>
+            <h2 id="web-translated-title" style="font-size:1.4rem; font-weight:700;">Translated Webpage</h2>
+            <a id="web-orig-link" href="#" target="_blank" style="color:var(--accent); font-size:0.85rem; text-decoration:none;">Visit original site ➔</a>
+          </div>
+          <button class="listen-pill-btn" id="web-copy-all-btn">📋 Copy Article</button>
+        </div>
+
+        <div id="web-articles-list">
+          <!-- Paragraph cards dynamically rendered -->
+        </div>
+      </div>
+    </div>
+
+    <!-- History Drawer Section -->
+    <div class="history-card" id="history-section">
+      <div class="history-header">
+        <div class="history-title">
+          <span>📜</span> Recent Translation Log
+        </div>
+        <button class="listen-pill-btn" id="clear-history-btn">Clear Log</button>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+  </main>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">Copied to clipboard!</div>
+
+  <!-- Footer -->
+  <footer>
+    <strong>VoxTranslate</strong> • Real-Time Voice, Document & Webpage Translator • Architected by <strong>Krishna</strong>
+  </footer>
+
+  <script>
+    // State Management
+    let currentMode = 'text';
+    let sourceLang = 'Auto';
+    let targetLang = 'Spanish';
+    let isRecording = false;
+    let recognition = null;
+    let debounceTimer = null;
+    let translationHistory = JSON.parse(localStorage.getItem('voxtrans_history') || '[]');
+
+    const allLanguages = [
+      { name: "English", flag: "🇺🇸", code: "en" },
+      { name: "Spanish", flag: "🇪🇸", code: "es" },
+      { name: "Hindi", flag: "🇮🇳", code: "hi" },
+      { name: "French", flag: "🇫🇷", code: "fr" },
+      { name: "German", flag: "🇩🇪", code: "de" },
+      { name: "Japanese", flag: "🇯🇵", code: "ja" },
+      { name: "Korean", flag: "🇰🇷", code: "ko" },
+      { name: "Chinese (Simplified)", flag: "🇨🇳", code: "zh-CN" },
+      { name: "Russian", flag: "🇷🇺", code: "ru" },
+      { name: "Italian", flag: "🇮🇹", code: "it" },
+      { name: "Portuguese", flag: "🇧🇷", code: "pt" },
+      { name: "Arabic", flag: "🇸🇦", code: "ar" },
+      { name: "Bengali", flag: "🇧🇩", code: "bn" },
+      { name: "Tamil", flag: "🇮🇳", code: "ta" },
+      { name: "Telugu", flag: "🇮🇳", code: "te" },
+      { name: "Gujarati", flag: "🇮🇳", code: "gu" },
+      { name: "Kannada", flag: "🇮🇳", code: "kn" },
+      { name: "Punjabi", flag: "🇮🇳", code: "pa" },
+      { name: "Turkish", flag: "🇹🇷", code: "tr" },
+      { name: "Dutch", flag: "🇳🇱", code: "nl" }
+    ];
+
+    // DOM Elements
+    const sourceTextarea = document.getElementById('source-textarea');
+    const targetOutput = document.getElementById('target-output');
+    const charCounter = document.getElementById('char-counter');
+    const statusBadge = document.getElementById('status-badge');
+    const sourceBadge = document.getElementById('source-badge');
+    const targetBadge = document.getElementById('target-badge');
+    const voiceBtn = document.getElementById('voice-btn');
+    const voiceLabel = document.getElementById('voice-label');
+    const voiceIcon = document.getElementById('voice-icon');
+    const swapBtn = document.getElementById('swap-btn');
+    const toast = document.getElementById('toast');
+    const historyList = document.getElementById('history-list');
+
+    // -------------------------------------------------------------
+    // Mode Switching (Text, Images, Documents, Websites)
+    // -------------------------------------------------------------
+    document.querySelectorAll('.mode-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+
+        const mode = pill.dataset.mode;
+        currentMode = mode;
+
+        document.querySelectorAll('.view-section').forEach(sec => sec.classList.remove('active'));
+        document.getElementById(`view-${mode}`).classList.add('active');
+        showToast(`Switched to ${pill.textContent.trim()} mode`);
+      });
+    });
+
+    // Populate dropdown selects
+    function populateDropdowns() {
+      const srcSelect = document.getElementById('src-select');
+      const tgtSelect = document.getElementById('tgt-select');
+
+      allLanguages.forEach(l => {
+        const opt1 = document.createElement('option');
+        opt1.value = l.name;
+        opt1.textContent = `${l.flag} ${l.name}`;
+        srcSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = l.name;
+        opt2.textContent = `${l.flag} ${l.name}`;
+        tgtSelect.appendChild(opt2);
+      });
+    }
+
+    // Language Chips Handlers
+    function setupLanguageChips() {
+      document.querySelectorAll('#src-chips .lang-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#src-chips .lang-chip').forEach(c => c.classList.remove('selected'));
+          btn.classList.add('selected');
+          sourceLang = btn.dataset.lang;
+          updateLanguageBadges();
+          if (currentMode === 'text') triggerTranslate();
+        });
+      });
+
+      document.querySelectorAll('#tgt-chips .lang-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('#tgt-chips .lang-chip').forEach(c => c.classList.remove('selected'));
+          btn.classList.add('selected');
+          targetLang = btn.dataset.lang;
+          updateLanguageBadges();
+          if (currentMode === 'text') triggerTranslate();
+        });
+      });
+
+      document.getElementById('src-select').addEventListener('change', (e) => {
+        if (!e.target.value) return;
+        sourceLang = e.target.value;
+        document.querySelectorAll('#src-chips .lang-chip').forEach(c => c.classList.remove('selected'));
+        updateLanguageBadges();
+        if (currentMode === 'text') triggerTranslate();
+      });
+
+      document.getElementById('tgt-select').addEventListener('change', (e) => {
+        if (!e.target.value) return;
+        targetLang = e.target.value;
+        document.querySelectorAll('#tgt-chips .lang-chip').forEach(c => c.classList.remove('selected'));
+        updateLanguageBadges();
+        if (currentMode === 'text') triggerTranslate();
+      });
+    }
+
+    function updateLanguageBadges() {
+      const srcObj = allLanguages.find(l => l.name === sourceLang);
+      const tgtObj = allLanguages.find(l => l.name === targetLang);
+
+      sourceBadge.innerHTML = sourceLang === 'Auto' ? '<span>🌐</span> Auto Detect' : `<span>${srcObj ? srcObj.flag : '🌐'}</span> ${sourceLang}`;
+      targetBadge.innerHTML = `<span>${tgtObj ? tgtObj.flag : '🌐'}</span> ${targetLang}`;
+    }
+
+    // Swap Languages
+    swapBtn.addEventListener('click', () => {
+      if (sourceLang === 'Auto') sourceLang = 'English';
+      const temp = sourceLang;
+      sourceLang = targetLang;
+      targetLang = temp;
+
+      const curSource = sourceTextarea.value;
+      const curTarget = targetOutput.classList.contains('placeholder') ? '' : targetOutput.innerText;
+
+      sourceTextarea.value = curTarget;
+      targetOutput.innerText = curSource;
+      targetOutput.classList.toggle('placeholder', !curSource);
+
+      updateLanguageBadges();
+      triggerTranslate();
+      showToast('Swapped languages!');
+    });
+
+    // Real-Time Debounced Translation (Mode 1)
+    sourceTextarea.addEventListener('input', () => {
+      const len = sourceTextarea.value.length;
+      charCounter.textContent = `${len.toLocaleString()} / 5,000`;
+
+      clearTimeout(debounceTimer);
+      if (len === 0) {
+        targetOutput.innerText = "Translation will appear here in real time...";
+        targetOutput.classList.add('placeholder');
+        statusBadge.textContent = "⚡ Real-time";
+        return;
+      }
+
+      statusBadge.textContent = "Translating...";
+      debounceTimer = setTimeout(triggerTranslate, 350);
+    });
+
+    async function triggerTranslate() {
+      const text = sourceTextarea.value.trim();
+      if (!text) return;
+
+      const effectiveSource = sourceLang === 'Auto' ? 'English' : sourceLang;
+
+      try {
+        const response = await fetch('/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: text,
+            source: effectiveSource,
+            target: targetLang
+          })
+        });
+
+        const data = await response.json();
+        if (data.translated_text) {
+          targetOutput.innerText = data.translated_text;
+          targetOutput.classList.remove('placeholder');
+          statusBadge.textContent = "✓ Done";
+          addToHistory(text, data.translated_text, effectiveSource, targetLang);
+        }
+      } catch (err) {
+        statusBadge.textContent = "⚠ Offline";
+      }
+    }
+
+    // -------------------------------------------------------------
+    // MODE 2: IMAGES OCR & TRANSLATION
+    // -------------------------------------------------------------
+    const imgDropzone = document.getElementById('image-dropzone');
+    const imgFileInput = document.getElementById('image-file-input');
+    const imgPreviewStudio = document.getElementById('image-preview-studio');
+    const imgPreviewElement = document.getElementById('image-preview-element');
+    const ocrStatusBadge = document.getElementById('ocr-status-badge');
+    const imgTranslatedOutput = document.getElementById('image-translated-output');
+
+    imgDropzone.addEventListener('click', () => imgFileInput.click());
+
+    imgDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      imgDropzone.classList.add('dragover');
+    });
+
+    imgDropzone.addEventListener('dragleave', () => imgDropzone.classList.remove('dragover'));
+
+    imgDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      imgDropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleImageFile(e.dataTransfer.files[0]);
+    });
+
+    imgFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleImageFile(e.target.files[0]);
+    });
+
+    // Paste Image from Clipboard (Ctrl+V)
+    window.addEventListener('paste', (e) => {
+      if (currentMode !== 'images') return;
+      const items = e.clipboardData.items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          handleImageFile(file);
+          break;
+        }
+      }
+    });
+
+    async function handleImageFile(file) {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        imgDropzone.style.display = 'none';
+        imgPreviewStudio.style.display = 'grid';
+        imgPreviewElement.src = e.target.result;
+        ocrStatusBadge.textContent = "🔍 Extracting text using OCR...";
+        imgTranslatedOutput.innerText = "Recognizing text in image...";
+
+        try {
+          const result = await Tesseract.recognize(e.target.result, 'eng+spa+fra+deu', {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                ocrStatusBadge.textContent = `Scanning: ${Math.round(m.progress * 100)}%`;
+              }
+            }
+          });
+
+          const extracted = result.data.text.trim();
+          if (!extracted) {
+            ocrStatusBadge.textContent = "⚠ No text detected in image";
+            imgTranslatedOutput.innerText = "Could not detect clear text in this image.";
+            return;
+          }
+
+          ocrStatusBadge.textContent = `✓ Detected ${extracted.split(/\s+/).length} words`;
+
+          const res = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: extracted,
+              source: sourceLang === 'Auto' ? 'English' : sourceLang,
+              target: targetLang
+            })
+          });
+
+          const transData = await res.json();
+          imgTranslatedOutput.innerText = transData.translated_text || extracted;
+          showToast('Image translated successfully!');
+        } catch (err) {
+          ocrStatusBadge.textContent = "OCR error";
+          imgTranslatedOutput.innerText = "Failed to extract text from image.";
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    document.getElementById('img-reupload-btn').addEventListener('click', () => {
+      imgDropzone.style.display = 'block';
+      imgPreviewStudio.style.display = 'none';
+      imgFileInput.value = '';
+    });
+
+    document.getElementById('img-copy-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(imgTranslatedOutput.innerText);
+      showToast('Image translation copied!');
+    });
+
+    document.getElementById('img-listen-btn').addEventListener('click', () => {
+      speakText(imgTranslatedOutput.innerText, targetLang);
+    });
+
+    // -------------------------------------------------------------
+    // MODE 3: DOCUMENTS TRANSLATION
+    // -------------------------------------------------------------
+    const docDropzone = document.getElementById('doc-dropzone');
+    const docFileInput = document.getElementById('doc-file-input');
+    const docPreviewStudio = document.getElementById('doc-preview-studio');
+    const docOrigTextarea = document.getElementById('doc-orig-textarea');
+    const docTranslatedOutput = document.getElementById('doc-translated-output');
+    const docFilenameBadge = document.getElementById('doc-filename-badge');
+    const docWordsBadge = document.getElementById('doc-words-badge');
+
+    docDropzone.addEventListener('click', () => docFileInput.click());
+
+    docDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      docDropzone.classList.add('dragover');
+    });
+
+    docDropzone.addEventListener('dragleave', () => docDropzone.classList.remove('dragover'));
+
+    docDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      docDropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleDocFile(e.dataTransfer.files[0]);
+    });
+
+    docFileInput.addEventListener('change', (e) => {
+      if (e.target.files.length) handleDocFile(e.target.files[0]);
+    });
+
+    async function handleDocFile(file) {
+      if (!file) return;
+
+      docDropzone.style.display = 'none';
+      docPreviewStudio.style.display = 'grid';
+      docFilenameBadge.textContent = file.name;
+      docWordsBadge.textContent = "Translating...";
+      docOrigTextarea.value = "Reading document contents...";
+      docTranslatedOutput.innerText = "Extracting document and translating...";
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('source', sourceLang === 'Auto' ? 'English' : sourceLang);
+      formData.append('target', targetLang);
+
+      try {
+        const response = await fetch('/api/translate-document', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          docOrigTextarea.value = data.original_text;
+          docTranslatedOutput.innerText = data.translated_text;
+          docWordsBadge.textContent = `${data.word_count.toLocaleString()} words`;
+          showToast('Document translated!');
+        } else {
+          docTranslatedOutput.innerText = "Error: " + (data.detail || "Could not translate document.");
+        }
+      } catch (err) {
+        docTranslatedOutput.innerText = "Error communicating with document translation service.";
+      }
+    }
+
+    document.getElementById('doc-reupload-btn').addEventListener('click', () => {
+      docDropzone.style.display = 'block';
+      docPreviewStudio.style.display = 'none';
+      docFileInput.value = '';
+    });
+
+    document.getElementById('doc-copy-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(docTranslatedOutput.innerText);
+      showToast('Document translation copied!');
+    });
+
+    document.getElementById('doc-listen-btn').addEventListener('click', () => {
+      speakText(docTranslatedOutput.innerText.substring(0, 500), targetLang);
+    });
+
+    document.getElementById('doc-download-btn').addEventListener('click', () => {
+      const text = docTranslatedOutput.innerText;
+      if (!text) return;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `translated_${docFilenameBadge.textContent}.txt`;
+      a.click();
+      showToast('Downloaded translated document!');
+    });
+
+    // -------------------------------------------------------------
+    // MODE 4: WEBSITES TRANSLATION
+    // -------------------------------------------------------------
+    const webUrlInput = document.getElementById('website-url-input');
+    const translateWebBtn = document.getElementById('translate-web-btn');
+    const webResultsContainer = document.getElementById('web-results-container');
+    const webTranslatedTitle = document.getElementById('web-translated-title');
+    const webOrigLink = document.getElementById('web-orig-link');
+    const webArticlesList = document.getElementById('web-articles-list');
+
+    translateWebBtn.addEventListener('click', async () => {
+      const url = webUrlInput.value.trim();
+      if (!url) {
+        showToast('Please enter a website URL');
+        return;
+      }
+
+      translateWebBtn.disabled = true;
+      translateWebBtn.innerHTML = "<span>⏳</span> Fetching & Translating...";
+      webResultsContainer.style.display = 'flex';
+      webTranslatedTitle.textContent = "Loading webpage translation...";
+      webArticlesList.innerHTML = '<div style="color:var(--text-muted);">Fetching website content and applying neural translation...</div>';
+
+      try {
+        const response = await fetch('/api/translate-website', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: url,
+            source: sourceLang === 'Auto' ? 'English' : sourceLang,
+            target: targetLang
+          })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          webTranslatedTitle.textContent = data.translated_title;
+          webOrigLink.href = data.url;
+          webOrigLink.textContent = `Source: ${data.url} ➔`;
+
+          webArticlesList.innerHTML = '';
+          data.articles.forEach(art => {
+            const card = document.createElement('div');
+            card.className = 'web-article-card';
+            card.innerHTML = `
+              <div class="web-article-orig">${art.original}</div>
+              <div class="web-article-trans">${art.translated}</div>
+            `;
+            webArticlesList.appendChild(card);
+          });
+          showToast('Website translated successfully!');
+        } else {
+          webArticlesList.innerHTML = `<div style="color:var(--danger);">Error: ${data.detail || "Could not translate website."}</div>`;
+        }
+      } catch (err) {
+        webArticlesList.innerHTML = `<div style="color:var(--danger);">Network error fetching site. Ensure URL is public and valid.</div>`;
+      } finally {
+        translateWebBtn.disabled = false;
+        translateWebBtn.innerHTML = "<span>🌐</span> Translate Website";
+      }
+    });
+
+    document.getElementById('web-copy-all-btn').addEventListener('click', () => {
+      const texts = Array.from(document.querySelectorAll('.web-article-trans')).map(el => el.innerText).join('\n\n');
+      navigator.clipboard.writeText(texts);
+      showToast('All webpage translations copied!');
+    });
+
+    // -------------------------------------------------------------
+    // Text to Speech
+    // -------------------------------------------------------------
+    function speakText(text, langName) {
+      if (!text || !text.trim()) return;
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        const langObj = allLanguages.find(l => l.name === langName);
+        if (langObj) utterance.lang = langObj.code;
+        window.speechSynthesis.speak(utterance);
+      } else {
+        const audio = new Audio(`/api/tts?t=${encodeURIComponent(text)}&lang=${encodeURIComponent(langName)}`);
+        audio.play();
+      }
+    }
+
+    document.getElementById('src-listen-btn').addEventListener('click', () => {
+      speakText(sourceTextarea.value, sourceLang === 'Auto' ? 'English' : sourceLang);
+    });
+
+    document.getElementById('tgt-listen-btn').addEventListener('click', () => {
+      if (!targetOutput.classList.contains('placeholder')) {
+        speakText(targetOutput.innerText, targetLang);
+      }
+    });
+
+    // -------------------------------------------------------------
+    // Voice Input Speech-to-Text
+    // -------------------------------------------------------------
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        voiceBtn.style.display = 'none';
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        isRecording = true;
+        voiceBtn.classList.add('recording');
+        voiceLabel.textContent = "Listening...";
+        voiceIcon.textContent = "🔴";
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        sourceTextarea.value = transcript;
+        sourceTextarea.dispatchEvent(new Event('input'));
+      };
+
+      recognition.onerror = () => stopRecording();
+      recognition.onend = () => stopRecording();
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      voiceBtn.classList.remove('recording');
+      voiceLabel.textContent = "Voice Input";
+      voiceIcon.textContent = "🎙️";
+      if (recognition) recognition.stop();
+    }
+
+    voiceBtn.addEventListener('click', () => {
+      if (!recognition) return;
+      if (!isRecording) {
+        const langObj = allLanguages.find(l => l.name === (sourceLang === 'Auto' ? 'English' : sourceLang));
+        if (langObj) recognition.lang = langObj.code;
+        recognition.start();
+      } else {
+        stopRecording();
+      }
+    });
+
+    // Copy Handlers
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    document.getElementById('src-copy-btn').addEventListener('click', () => {
+      if (!sourceTextarea.value) return;
+      navigator.clipboard.writeText(sourceTextarea.value);
+      showToast('Input copied to clipboard!');
+    });
+
+    document.getElementById('tgt-copy-btn').addEventListener('click', () => {
+      if (targetOutput.classList.contains('placeholder')) return;
+      navigator.clipboard.writeText(targetOutput.innerText);
+      showToast('Translation copied to clipboard!');
+    });
+
+    document.getElementById('src-clear-btn').addEventListener('click', () => {
+      sourceTextarea.value = '';
+      sourceTextarea.dispatchEvent(new Event('input'));
+    });
+
+    document.getElementById('clear-all-btn').addEventListener('click', () => {
+      sourceTextarea.value = '';
+      targetOutput.innerText = "Translation will appear here in real time...";
+      targetOutput.classList.add('placeholder');
+      charCounter.textContent = "0 / 5,000";
+      showToast('All cleared!');
+    });
+
+    // History Log
+    function addToHistory(src, tgt, sl, tl) {
+      if (!src || !tgt || src === tgt) return;
+      if (translationHistory.length && translationHistory[0].src === src) return;
+
+      translationHistory.unshift({
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        src,
+        tgt,
+        sl,
+        tl
+      });
+
+      if (translationHistory.length > 20) translationHistory.pop();
+      localStorage.setItem('voxtrans_history', JSON.stringify(translationHistory));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = '';
+      if (!translationHistory.length) {
+        historyList.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem;">No history yet. Start typing or speaking!</div>';
+        return;
+      }
+
+      translationHistory.slice(0, 10).forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'history-item';
+        card.innerHTML = `
+          <div class="history-item-top">
+            <span>${item.sl} ➔ ${item.tl}</span>
+            <span>${item.time}</span>
+          </div>
+          <div class="history-item-src">${item.src}</div>
+          <div class="history-item-tgt">${item.tgt}</div>
+        `;
+        card.addEventListener('click', () => {
+          sourceTextarea.value = item.src;
+          targetOutput.innerText = item.tgt;
+          targetOutput.classList.remove('placeholder');
+          showToast('Loaded from log!');
+        });
+        historyList.appendChild(card);
+      });
+    }
+
+    document.getElementById('clear-history-btn').addEventListener('click', () => {
+      translationHistory = [];
+      localStorage.removeItem('voxtrans_history');
+      renderHistory();
+      showToast('Log cleared');
+    });
+
+    document.getElementById('tgt-save-history-btn').addEventListener('click', () => {
+      const src = sourceTextarea.value.trim();
+      const tgt = targetOutput.innerText.trim();
+      if (!src || targetOutput.classList.contains('placeholder')) return;
+      addToHistory(src, tgt, sourceLang, targetLang);
+      showToast('Saved to log!');
+    });
+
+    // Initialize
+    populateDropdowns();
+    setupLanguageChips();
+    initSpeechRecognition();
+    renderHistory();
+  </script>
+</body>
+</html>
